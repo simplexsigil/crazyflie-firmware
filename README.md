@@ -2,6 +2,8 @@
 
 This is not the original Bitcraze repository but a fork to adapt the crazyflie firmware to our needs.
 
+For more information about our project, please have a look at our documentation repository [crazyflie-documents](https://github.com/simplexsigil/crazyflie-documents).
+
 # Crazyflie 2.0 Firmware  [![Build Status](https://api.travis-ci.org/bitcraze/crazyflie-firmware.svg)](https://travis-ci.org/bitcraze/crazyflie-firmware)
 
 This project contains the source code for the Crazyflie 2.0 firmware.
