@@ -188,6 +188,26 @@ LOG_ADD(LOG_FLOAT, pitch,     &attitudeDesiredAfterPositionCorrection.pitch)
 LOG_ADD(LOG_FLOAT, yaw,       &attitudeDesiredAfterPositionCorrection.yaw)
 LOG_GROUP_STOP(attaposc)
 
+LOG_GROUP_START(setpointposlog)
+LOG_ADD(LOG_FLOAT, x,      &setpointBeforePostitionCorrection.position.x)
+LOG_ADD(LOG_FLOAT, y,     &setpointBeforePostitionCorrection.position.y)
+LOG_ADD(LOG_FLOAT, z,       &setpointBeforePostitionCorrection.position.z)
+LOG_GROUP_STOP(setpointposlog)
+
+LOG_GROUP_START(setpointvellog)
+LOG_ADD(LOG_FLOAT, xdot,      &setpointBeforePostitionCorrection.velocity.x)
+LOG_ADD(LOG_FLOAT, ydot,     &setpointBeforePostitionCorrection.velocity.y)
+LOG_ADD(LOG_FLOAT, zdot,       &setpointBeforePostitionCorrection.velocity.z)
+LOG_GROUP_STOP(setpointvellog)
+
+LOG_GROUP_START(setpointacclog)
+LOG_ADD(LOG_FLOAT, x2dot,      &setpointBeforePostitionCorrection.acceleration.x)
+LOG_ADD(LOG_FLOAT, y2dot,     &setpointBeforePostitionCorrection.acceleration.y)
+LOG_ADD(LOG_FLOAT, z2dot,       &setpointBeforePostitionCorrection.acceleration.z)
+LOG_GROUP_STOP(setpointacclog)
+
+
+
 PARAM_GROUP_START(controller)
 PARAM_ADD(PARAM_UINT8, tiltComp, &tiltCompensationEnabled)
 PARAM_GROUP_STOP(controller)
