@@ -31,15 +31,28 @@
 #include <string.h>
 
 // Based on 84MHz peripheral clock
-#define SPI_BAUDRATE_21MHZ  SPI_BaudRatePrescaler_2     // 21MHz
-#define SPI_BAUDRATE_12MHZ  SPI_BaudRatePrescaler_4     // 11.5MHz
-#define SPI_BAUDRATE_6MHZ   SPI_BaudRatePrescaler_8    // 5.25MHz
-#define SPI_BAUDRATE_3MHZ   SPI_BaudRatePrescaler_16    // 2.625MHz
-#define SPI_BAUDRATE_2MHZ   SPI_BaudRatePrescaler_32    // 1.3125MHz
+#define SPI_BAUDRATE_21MHZ  SPI_BaudRatePrescaler_4     // 21MHz
+#define SPI_BAUDRATE_12MHZ  SPI_BaudRatePrescaler_8     // 11.5MHz
+#define SPI_BAUDRATE_6MHZ   SPI_BaudRatePrescaler_16    // 5.25MHz
+#define SPI_BAUDRATE_3MHZ   SPI_BaudRatePrescaler_32    // 2.625MHz
+#define SPI_BAUDRATE_2MHZ   SPI_BaudRatePrescaler_64    // 1.3125MHz
+
+#define nSPI_BAUDRATE_21MHZ  SPI_BaudRatePrescaler_2     // 21MHz
+#define nSPI_BAUDRATE_12MHZ  SPI_BaudRatePrescaler_4     // 11.5MHz
+#define nSPI_BAUDRATE_6MHZ   SPI_BaudRatePrescaler_8    // 5.25MHz
+#define nSPI_BAUDRATE_3MHZ   SPI_BaudRatePrescaler_16    // 2.625MHz
+#define nSPI_BAUDRATE_2MHZ   SPI_BaudRatePrescaler_32    // 1.3125MHz
 
 /**
  * Initialize the SPI.
  */
+void nspiBegin(void);
+void nspiBeginTransaction(uint16_t baudRatePrescaler);
+void nspiEndTransaction();
+
+/* Send the data_tx buffer and receive into the data_rx buffer */
+bool nspiExchange(size_t length, const uint8_t *data_tx, uint8_t *data_rx);
+
 void spiBegin(void);
 void spiBeginTransaction(uint16_t baudRatePrescaler);
 void spiEndTransaction();
