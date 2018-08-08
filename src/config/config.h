@@ -46,10 +46,12 @@
 #include "trace.h"
 #include "usec_time.h"
 
-#define PROTOCOL_VERSION 3
+#define PROTOCOL_VERSION 4
 
 #ifdef STM32F4XX
+#ifndef P_NAME
   #define P_NAME "Crazyflie 2.0"
+#endif
   #define QUAD_FORMATION_X
 
   #define CONFIG_BLOCK_ADDRESS    (2048 * (64-1))
@@ -62,15 +64,6 @@
   #define configGENERATE_RUN_TIME_STATS 1
   #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() initUsecTimer()
   #define portGET_RUN_TIME_COUNTER_VALUE() usecTimestamp()
-
-#else
-  #define P_NAME "Crazyflie 1.0"
-  #define CONFIG_BLOCK_ADDRESS    (1024 * (128-1))
-  #define MCU_ID_ADDRESS          0x1FFFF7E8
-  #define MCU_FLASH_SIZE_ADDRESS  0x1FFFF7E0
-  #define FREERTOS_HEAP_SIZE      13900
-  #define FREERTOS_MIN_STACK_SIZE 80
-  #define FREERTOS_MCU_CLOCK_HZ   72000000
 #endif
 
 
@@ -78,11 +71,13 @@
 #define STABILIZER_TASK_PRI     4
 #define SENSORS_TASK_PRI        4
 #define ADC_TASK_PRI            3
+#define FLOW_TASK_PRI           3
 #define SYSTEM_TASK_PRI         2
 #define CRTP_TX_TASK_PRI        2
 #define CRTP_RX_TASK_PRI        2
 #define EXTRX_TASK_PRI          2
 #define ZRANGER_TASK_PRI        2
+#define ZRANGER2_TASK_PRI       2
 #define LOG_TASK_PRI            1
 #define MEM_TASK_PRI            1
 #define PARAM_TASK_PRI          1
@@ -123,6 +118,8 @@
 #define EXTRX_TASK_NAME         "EXTRX"
 #define UART_RX_TASK_NAME       "UART"
 #define ZRANGER_TASK_NAME       "ZRANGER"
+#define ZRANGER2_TASK_NAME      "ZRANGER2"
+#define FLOW_TASK_NAME          "FLOW"
 #define USDLOG_TASK_NAME        "USDLOG"
 #define USDWRITE_TASK_NAME      "USDWRITE"
 #define PCA9685_TASK_NAME       "PCA9685"
@@ -133,7 +130,7 @@
 #define ADC_TASK_STACKSIZE            configMINIMAL_STACK_SIZE
 #define PM_TASK_STACKSIZE             configMINIMAL_STACK_SIZE
 #define CRTP_TX_TASK_STACKSIZE        configMINIMAL_STACK_SIZE
-#define CRTP_RX_TASK_STACKSIZE        configMINIMAL_STACK_SIZE
+#define CRTP_RX_TASK_STACKSIZE        (2* configMINIMAL_STACK_SIZE)
 #define CRTP_RXTX_TASK_STACKSIZE      configMINIMAL_STACK_SIZE
 #define LOG_TASK_STACKSIZE            configMINIMAL_STACK_SIZE
 #define MEM_TASK_STACKSIZE            configMINIMAL_STACK_SIZE
@@ -148,6 +145,8 @@
 #define EXTRX_TASK_STACKSIZE          configMINIMAL_STACK_SIZE
 #define UART_RX_TASK_STACKSIZE        configMINIMAL_STACK_SIZE
 #define ZRANGER_TASK_STACKSIZE        (2 * configMINIMAL_STACK_SIZE)
+#define ZRANGER2_TASK_STACKSIZE       (2 * configMINIMAL_STACK_SIZE)
+#define FLOW_TASK_STACKSIZE           (2 * configMINIMAL_STACK_SIZE)
 #define USDLOG_TASK_STACKSIZE         (2 * configMINIMAL_STACK_SIZE)
 #define USDWRITE_TASK_STACKSIZE       (2 * configMINIMAL_STACK_SIZE)
 #define PCA9685_TASK_STACKSIZE        (2 * configMINIMAL_STACK_SIZE)
@@ -168,7 +167,7 @@
  * \def ACTIVATE_STARTUP_SOUND
  * Playes a startup melody using the motors and PWM modulation
  */
-#define ACTIVATE_STARTUP_SOUND
+//#define ACTIVATE_STARTUP_SOUND
 
 // Define to force initialization of expansion board drivers. For test-rig and programming.
 //#define FORCE_EXP_DETECT
