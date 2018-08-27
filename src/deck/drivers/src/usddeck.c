@@ -58,7 +58,7 @@
 #include "crc_bosch.h"
 
 // Hardware defines
-#define USD_CS_PIN    DECK_GPIO_IO4
+#define USD_CS_PIN    DECK_GPIO_RX2
 
 // FATFS low lever driver functions.
 static void initSpi(void);
@@ -128,8 +128,8 @@ static DISKIO_LowLevelDriver_t fatDrv =
 /* Initialize MMC interface */
 static void initSpi(void)
 {
-  spiBegin();   /* Enable SPI function */
-  spiSpeed = SPI_BAUDRATE_2MHZ;
+  nspiBegin();   /* Enable SPI function */
+  spiSpeed = nSPI_BAUDRATE_2MHZ;
 
   pinMode(USD_CS_PIN, OUTPUT);
   digitalWrite(USD_CS_PIN, 1);
@@ -139,12 +139,12 @@ static void initSpi(void)
 
 static void setSlowSpiMode(void)
 {
-  spiSpeed = SPI_BAUDRATE_2MHZ;
+  spiSpeed = nSPI_BAUDRATE_2MHZ;
 }
 
 static void setFastSpiMode(void)
 {
-  spiSpeed = SPI_BAUDRATE_21MHZ;
+  spiSpeed = nSPI_BAUDRATE_21MHZ;
 }
 
 /* Exchange a byte */
@@ -152,7 +152,7 @@ static BYTE xchgSpi(BYTE dat)
 {
   BYTE receive;
 
-  spiExchange(1, &dat, &receive);
+  nspiExchange(1, &dat, &receive);
   return (BYTE)receive;
 }
 
@@ -160,13 +160,13 @@ static BYTE xchgSpi(BYTE dat)
 static void rcvrSpiMulti(BYTE *buff, UINT btr)
 {
   memset(exchangeBuff, 0xFFFFFFFF, btr);
-  spiExchange(btr, exchangeBuff, buff);
+  nspiExchange(btr, exchangeBuff, buff);
 }
 
 /* Send multiple byte */
 static void xmitSpiMulti(const BYTE *buff, UINT btx)
 {
-  spiExchange(btx, buff, exchangeBuff);
+  nspiExchange(btx, buff, exchangeBuff);
 }
 
 static void csHigh(void)
@@ -177,12 +177,12 @@ static void csHigh(void)
   // Moved here from fatfs_sd.c to handle bus release
   xchgSpi(0xFF);
 
-  spiEndTransaction();
+  nspiEndTransaction();
 }
 
 static void csLow(void)
 {
-  spiBeginTransaction(spiSpeed);
+  nspiBeginTransaction(spiSpeed);
   digitalWrite(USD_CS_PIN, 0);
 }
 

@@ -18,6 +18,16 @@ static attitude_t attitudeDesired;
 static attitude_t rateDesired;
 static float actuatorThrust;
 
+static float actuatorThrustBeforePositionCorrection;
+attitude_t attitudeDesiredBeforePositionCorrection;
+setpoint_t setpointBeforePostitionCorrection;
+state_t stateBeforePositionCorrection;
+
+static float actuatorThrustAfterPositionCorrection;
+attitude_t attitudeDesiredAfterPositionCorrection;
+setpoint_t setpointAfterPostitionCorrection;
+state_t stateAfterPositionCorrection;
+
 void controllerPidInit(void)
 {
   attitudeControllerInit(ATTITUDE_UPDATE_DT);
@@ -38,6 +48,8 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
                                          const state_t *state,
                                          const uint32_t tick)
 {
+
+  // The if will only execute this every second iteration.
   if (RATE_DO_EXECUTE(ATTITUDE_RATE, tick)) {
     // Rate-controled YAW is moving YAW angle setpoint
     if (setpoint->mode.yaw == modeVelocity) {
@@ -51,10 +63,27 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
     }
   }
 
+  // The if will only execute this every 10th iteration.
   if (RATE_DO_EXECUTE(POSITION_RATE, tick)) {
+	// TODO: Write out data before position correction.
+	// Problem: What has happened since the setpoint was given as command so far? can we take the setpoint just like that?
+
+	actuatorThrustBeforePositionCorrection = actuatorThrust;
+	attitudeDesiredBeforePositionCorrection = attitudeDesired;
+	setpointBeforePostitionCorrection = (*setpoint);
+	stateBeforePositionCorrection = (*state);
+
     positionController(&actuatorThrust, &attitudeDesired, setpoint, state);
+
+    actuatorThrustAfterPositionCorrection = actuatorThrust;
+    attitudeDesiredAfterPositionCorrection = attitudeDesired;
+    setpointAfterPostitionCorrection = (*setpoint);
+    stateAfterPositionCorrection = (*state);
+
+    // TODO: Write out data after position correction.
   }
 
+  // The if will only execute this every second iteration.
   if (RATE_DO_EXECUTE(ATTITUDE_RATE, tick)) {
     // Switch between manual and automatic position control
     if (setpoint->mode.z == modeDisable) {
@@ -116,6 +145,9 @@ void controllerPid(control_t *control, setpoint_t *setpoint,
   }
 }
 
+/*
+
+*/
 
 LOG_GROUP_START(controller)
 LOG_ADD(LOG_FLOAT, actuatorThrust, &actuatorThrust)
@@ -126,6 +158,56 @@ LOG_ADD(LOG_FLOAT, rollRate,  &rateDesired.roll)
 LOG_ADD(LOG_FLOAT, pitchRate, &rateDesired.pitch)
 LOG_ADD(LOG_FLOAT, yawRate,   &rateDesired.yaw)
 LOG_GROUP_STOP(controller)
+
+/*
+LOG_GROUP_START(setpbposc)
+LOG_ADD(LOG_FLOAT, actuatorThrust, &actuatorThrustBeforePositionCorrection)
+LOG_ADD(LOG_FLOAT, roll,      &attitudeDesiredBeforePositionCorrection.roll)
+LOG_ADD(LOG_FLOAT, pitch,     &attitudeDesiredBeforePositionCorrection.pitch)
+LOG_ADD(LOG_FLOAT, yaw,       &attitudeDesiredBeforePositionCorrection.yaw)
+LOG_GROUP_STOP(setpbposc)
+
+LOG_GROUP_START(setpaposc)
+LOG_ADD(LOG_FLOAT, actuatorThrust, &actuatorThrustBeforePositionCorrection)
+LOG_ADD(LOG_FLOAT, roll,      &attitudeDesiredBeforePositionCorrection.roll)
+LOG_ADD(LOG_FLOAT, pitch,     &attitudeDesiredBeforePositionCorrection.pitch)
+LOG_ADD(LOG_FLOAT, yaw,       &attitudeDesiredBeforePositionCorrection.yaw)
+LOG_GROUP_STOP(setpaposc)
+*/
+
+LOG_GROUP_START(attbposc)
+LOG_ADD(LOG_FLOAT, actuatorThrust, &actuatorThrustBeforePositionCorrection)
+LOG_ADD(LOG_FLOAT, roll,      &attitudeDesiredBeforePositionCorrection.roll)
+LOG_ADD(LOG_FLOAT, pitch,     &attitudeDesiredBeforePositionCorrection.pitch)
+LOG_ADD(LOG_FLOAT, yaw,       &attitudeDesiredBeforePositionCorrection.yaw)
+LOG_GROUP_STOP(attbposc)
+
+LOG_GROUP_START(attaposc)
+LOG_ADD(LOG_FLOAT, actuatorThrust, &actuatorThrustAfterPositionCorrection)
+LOG_ADD(LOG_FLOAT, roll,      &attitudeDesiredAfterPositionCorrection.roll)
+LOG_ADD(LOG_FLOAT, pitch,     &attitudeDesiredAfterPositionCorrection.pitch)
+LOG_ADD(LOG_FLOAT, yaw,       &attitudeDesiredAfterPositionCorrection.yaw)
+LOG_GROUP_STOP(attaposc)
+
+LOG_GROUP_START(setpointposlog)
+LOG_ADD(LOG_FLOAT, x,      &setpointBeforePostitionCorrection.position.x)
+LOG_ADD(LOG_FLOAT, y,     &setpointBeforePostitionCorrection.position.y)
+LOG_ADD(LOG_FLOAT, z,       &setpointBeforePostitionCorrection.position.z)
+LOG_GROUP_STOP(setpointposlog)
+
+LOG_GROUP_START(setpointvellog)
+LOG_ADD(LOG_FLOAT, xdot,      &setpointBeforePostitionCorrection.velocity.x)
+LOG_ADD(LOG_FLOAT, ydot,     &setpointBeforePostitionCorrection.velocity.y)
+LOG_ADD(LOG_FLOAT, zdot,       &setpointBeforePostitionCorrection.velocity.z)
+LOG_GROUP_STOP(setpointvellog)
+
+LOG_GROUP_START(setpointacclog)
+LOG_ADD(LOG_FLOAT, x2dot,      &setpointBeforePostitionCorrection.acceleration.x)
+LOG_ADD(LOG_FLOAT, y2dot,     &setpointBeforePostitionCorrection.acceleration.y)
+LOG_ADD(LOG_FLOAT, z2dot,       &setpointBeforePostitionCorrection.acceleration.z)
+LOG_GROUP_STOP(setpointacclog)
+
+
 
 PARAM_GROUP_START(controller)
 PARAM_ADD(PARAM_UINT8, tiltComp, &tiltCompensationEnabled)
