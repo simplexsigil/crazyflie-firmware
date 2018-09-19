@@ -24,11 +24,12 @@ CLOAD_ARGS        ?=
 PLATFORM					?= CF2
 LPS_TDMA_ENABLE   ?= 0
 LPS_TDOA_ENABLE   ?= 0
+LPS_TDOA3_ENABLE  ?= 0
 
 ######### Stabilizer configuration ##########
 ##### Sets the name of the stabilizer module to use.
 ESTIMATOR          ?= any
-CONTROLLER         ?= pid
+CONTROLLER         ?= Any # one of Any, PID, Mellinger
 POWER_DISTRIBUTION ?= stock
 SENSORS 					 ?= cf2
 
@@ -72,6 +73,7 @@ VPATH_CF2 += $(LIB)/CMSIS/STM32F4xx/Source/
 VPATH_CF2 += $(LIB)/STM32_USB_Device_Library/Core/src
 VPATH_CF2 += $(LIB)/STM32_USB_OTG_Driver/src
 VPATH_CF2 += src/deck/api src/deck/core src/deck/drivers/src src/deck/drivers/src/test
+VPATH_CF2 += src/utils/src/tdoa
 CRT0_CF2 = startup_stm32f40xx.o system_stm32f4xx.o
 
 # Should maybe be in separate file?
@@ -127,7 +129,9 @@ PROJ_OBJ_CF2 += ak8963.o eeprom.o maxsonar.o piezo.o
 PROJ_OBJ_CF2 += uart_syslink.o swd.o uart1.o uart2.o watchdog.o
 PROJ_OBJ_CF2 += cppm.o
 PROJ_OBJ_CF2 += bmi055_accel.o bmi055_gyro.o bmi160.o bmp280.o bstdr_comm_support.o bmm150.o
-PROJ_OBJ_CF2 += pca9685.o vl53l0x.o pca95x4.o vl53l1x.o
+PROJ_OBJ_CF2 += bmi088_accel.o bmi088_gyro.o bmi088_fifo.o bmp3.o
+PROJ_OBJ_CF2 += pca9685.o vl53l0x.o pca95x4.o vl53l1x.o pmw3901.o
+
 # USB Files
 PROJ_OBJ_CF2 += usb_bsp.o usblink.o usbd_desc.o usb.o
 
@@ -155,7 +159,7 @@ PROJ_OBJ += crtp_commander_generic.o crtp_localization_service.o
 PROJ_OBJ += attitude_pid_controller.o sensfusion6.o stabilizer.o
 PROJ_OBJ += position_estimator_altitude.o position_controller_pid.o
 PROJ_OBJ += estimator.o estimator_complementary.o
-PROJ_OBJ += controller_$(CONTROLLER).o
+PROJ_OBJ += controller.o controller_pid.o controller_mellinger.o
 PROJ_OBJ += power_distribution_$(POWER_DISTRIBUTION).o
 PROJ_OBJ_CF2 += estimator_kalman.o
 
@@ -179,17 +183,23 @@ PROJ_OBJ_CF2 += buzzdeck.o
 PROJ_OBJ_CF2 += gtgps.o
 PROJ_OBJ_CF2 += cppmdeck.o
 PROJ_OBJ_CF2 += usddeck.o
-PROJ_OBJ_CF2 += zranger.o
+PROJ_OBJ_CF2 += zranger.o zranger2.o
 PROJ_OBJ_CF2 += locodeck.o
+PROJ_OBJ_CF2 += clockCorrectionEngine.o
 PROJ_OBJ_CF2 += lpsTwrTag.o
-PROJ_OBJ_CF2 += lpsTdoaTag.o
+PROJ_OBJ_CF2 += lpsTdoa2Tag.o
+PROJ_OBJ_CF2 += lpsTdoa3Tag.o tdoaEngine.o tdoaStats.o tdoaStorage.o
 PROJ_OBJ_CF2 += outlierFilter.o
-PROJ_OBJ_CF2 += flowdeck.o
+PROJ_OBJ_CF2 += flowdeck_v1v2.o
 PROJ_OBJ_CF2 += oa.o
 PROJ_OBJ_CF2 += multiranger.o
 
 ifeq ($(LPS_TDOA_ENABLE), 1)
 CFLAGS += -DLPS_TDOA_ENABLE
+endif
+
+ifeq ($(LPS_TDOA3_ENABLE), 1)
+CFLAGS += -DLPS_TDOA3_ENABLE
 endif
 
 ifeq ($(LPS_TDMA_ENABLE), 1)
@@ -198,6 +208,7 @@ endif
 
 #Deck tests
 PROJ_OBJ_CF2 += exptest.o
+PROJ_OBJ_CF2 += exptestRR.o
 #PROJ_OBJ_CF2 += bigquadtest.o
 
 
@@ -237,6 +248,8 @@ INCLUDES_CF2 += -I$(LIB)/CMSIS/STM32F4xx/Include
 INCLUDES_CF2 += -I$(LIB)/STM32_USB_Device_Library/Core/inc
 INCLUDES_CF2 += -I$(LIB)/STM32_USB_OTG_Driver/inc
 INCLUDES_CF2 += -Isrc/deck/interface -Isrc/deck/drivers/interface
+INCLUDES_CF2 += -Isrc/utils/interface/clockCorrection
+INCLUDES_CF2 += -Isrc/utils/interface/tdoa
 INCLUDES_CF2 += -Ivendor/libdw1000/inc
 INCLUDES_CF2 += -I$(LIB)/FatFS
 INCLUDES_CF2 += -I$(LIB)/vl53l1
@@ -256,6 +269,8 @@ STFLAGS_CF2 = -DSTM32F4XX -DSTM32F40_41xxx -DHSE_VALUE=8000000 -DUSE_STDPERIPH_D
 
 ifeq ($(DEBUG), 1)
   CFLAGS += -O0 -g3 -DDEBUG
+  # Prevent silent errors when converting between types (requires explicit casting)
+  CFLAGS += -Wconversion
 else
 	# Fail on warnings
   CFLAGS += -Os -g3 -Werror
@@ -269,7 +284,7 @@ ifeq ($(USE_ESKYLINK), 1)
   CFLAGS += -DUSE_ESKYLINK
 endif
 
-CFLAGS += -DBOARD_REV_$(REV) -DESTIMATOR_NAME=$(ESTIMATOR)Estimator -DCONTROLLER_TYPE_$(CONTROLLER) -DPOWER_DISTRIBUTION_TYPE_$(POWER_DISTRIBUTION)
+CFLAGS += -DBOARD_REV_$(REV) -DESTIMATOR_NAME=$(ESTIMATOR)Estimator -DCONTROLLER_NAME=ControllerType$(CONTROLLER) -DPOWER_DISTRIBUTION_TYPE_$(POWER_DISTRIBUTION)
 
 CFLAGS += $(PROCESSOR) $(INCLUDES) $(STFLAGS)
 ifeq ($(PLATFORM), CF2)
@@ -286,7 +301,7 @@ CFLAGS += -Wdouble-promotion
 
 
 ASFLAGS = $(PROCESSOR) $(INCLUDES)
-LDFLAGS = --specs=nano.specs $(PROCESSOR) -Wl,-Map=$(PROG).map,--cref,--gc-sections,--undefined=uxTopUsedPriority
+LDFLAGS = --specs=nosys.specs --specs=nano.specs $(PROCESSOR) -Wl,-Map=$(PROG).map,--cref,--gc-sections,--undefined=uxTopUsedPriority 
 
 #Flags required by the ST library
 ifeq ($(CLOAD), 1)
@@ -321,8 +336,13 @@ endif
 
 
 all: check_submodules build
-build: clean_version compile print_version size
-compile: clean_version $(PROG).hex $(PROG).bin $(PROG).dfu
+build:
+# Each target is in a different line, so they are executed one after the other even when the processor has multiple cores (when the -j option for the make command is > 1). See: https://www.gnu.org/software/make/manual/html_node/Parallel.html
+	@$(MAKE) --no-print-directory clean_version
+	@$(MAKE) --no-print-directory compile
+	@$(MAKE) --no-print-directory print_version
+	@$(MAKE) --no-print-directory size
+compile: $(PROG).hex $(PROG).bin $(PROG).dfu
 
 libarm_math.a:
 	+$(MAKE) -C tools/make/cmsis_dsp/ V=$(V)
@@ -333,7 +353,7 @@ ifeq ($(SHELL),/bin/sh)
 	@rm -f version.c
 endif
 
-print_version: compile
+print_version:
 ifeq ($(PLATFORM), CF2)
 	@echo "Crazyflie 2.0 build!"
 endif
@@ -345,7 +365,7 @@ ifeq ($(FATFS_DISKIO_TESTS), 1)
 	@echo "WARNING: FatFS diskio tests enabled. Erases SD-card!"
 endif
 
-size: compile
+size:
 	@$(SIZE) -B $(PROG).elf
 
 #Radio bootloader
@@ -402,4 +422,5 @@ include tools/make/targets.mk
 -include $(DEPS)
 
 unit:
-	rake unit "DEFINES=$(CFLAGS)" "FILES=$(FILES)"
+# The flag "-DUNITY_INCLUDE_DOUBLE" allows comparison of double values in Unity. See: https://stackoverflow.com/a/37790196
+	rake unit "DEFINES=$(CFLAGS) -DUNITY_INCLUDE_DOUBLE" "FILES=$(FILES)"
