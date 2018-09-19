@@ -133,7 +133,7 @@
 #define CRTP_RX_TASK_STACKSIZE        (2* configMINIMAL_STACK_SIZE)
 #define CRTP_RXTX_TASK_STACKSIZE      configMINIMAL_STACK_SIZE
 #define LOG_TASK_STACKSIZE            configMINIMAL_STACK_SIZE
-#define MEM_TASK_STACKSIZE            configMINIMAL_STACK_SIZE
+#define MEM_TASK_STACKSIZE            (2 * configMINIMAL_STACK_SIZE)
 #define PARAM_TASK_STACKSIZE          configMINIMAL_STACK_SIZE
 #define SENSORS_TASK_STACKSIZE        (2 * configMINIMAL_STACK_SIZE)
 #define STABILIZER_TASK_STACKSIZE     (3 * configMINIMAL_STACK_SIZE)
@@ -156,6 +156,13 @@
 #define RADIO_CHANNEL 80
 #define RADIO_DATARATE RADIO_RATE_250K
 #define RADIO_ADDRESS 0xE7E7E7E7E7ULL
+
+/**
+ * \def PROPELLER_BALANCE_TEST_THRESHOLD
+ * This is the threshold for a propeller/motor to pass. It calculates the variance of the accelerometer X+Y
+ * when the propeller is spinning.
+ */
+#define PROPELLER_BALANCE_TEST_THRESHOLD  2.5f
 
 /**
  * \def ACTIVATE_AUTO_SHUTDOWN
